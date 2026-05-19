@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Raspy Raven — Book Poll</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Courier+Prime:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1208;
+    --parchment: #f5edd8;
+    --aged: #e8d9b8;
+    --rust: #8b3a2a;
+    --gold: #c9963a;
+    --shadow: rgba(26,18,8,0.18);
+    --line: #8b7355;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--parchment);
+    font-family: 'Courier Prime', monospace;
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Subtle paper texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  header {
+    text-align: center;
+    padding: 3rem 2rem 1.5rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  .title-raven {
+    font-size: 0.9rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--rust);
+    margin-bottom: 0.5rem;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.2rem, 5vw, 3.8rem);
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--ink);
+  }
+
+  h1 em {
+    font-style: italic;
+    color: var(--rust);
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+    letter-spacing: 0.2em;
+    color: var(--line);
+    margin-top: 0.7rem;
+    text-transform: uppercase;
+  }
+
+  .rule {
+    width: 120px;
+    height: 1px;
+    background: var(--gold);
+    margin: 1.2rem auto;
+    position: relative;
+  }
+  .rule::before, .rule::after {
+    content: '◆';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.5rem;
+    color: var(--gold);
+  }
+  .rule::before { left: -14px; }
+  .rule::after  { right: -14px; }
+
+  /* Canvas container */
+  #canvas-wrap {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  canvas {
+    display: block;
+    max-width: 100%;
+  }
+
+  footer {
+    text-align: center;
+    padding: 2rem;
+    font-size: 0.72rem;
+    color: var(--line);
+    letter-spacing: 0.15em;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Tooltip */
+  #tooltip {
+    position: fixed;
+    background: var(--ink);
+    color: var(--parchment);
+    font-family: 'Courier Prime', monospace;
+    font-size: 0.78rem;
+    padding: 0.5rem 0.8rem;
+    border-radius: 2px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 1000;
+    max-width: 220px;
+    line-height: 1.4;
+    border-left: 3px solid var(--gold);
+  }
+  #tooltip.visible { opacity: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title-raven">☽ The Raspy Raven ☾</div>
+  <h1>The <em>Great</em> Book Poll</h1>
+  <div class="rule"></div>
+  <div class="subtitle">84 nominations &nbsp;·&nbsp; 9 readers &nbsp;·&nbsp; 76 authors</div>
+</header>
+
+<div id="canvas-wrap">
+  <canvas id="c"></canvas>
+</div>
+
+<div id="tooltip"></div>
+
+<footer>Authors in the inner ring · Books radiate outward · Hover to explore</footer>
+
+<script>
+const DATA = [
+  { author: "Terry Pratchett",       books: ["Jingo","Guards, Guards","Thud","Men at Arms"] },
+  { author: "Iain Banks",            books: ["The Wasp Factory","The Steep Approach to Garbadale","The Player of Games"] },
+  { author: "Umberto Eco",           books: ["Foucault's Pendulum","The Name of the Rose"] },
+  { author: "Joe Abercrombie",       books: ["Half a King","Red Country"] },
+  { author: "John le Carré",         books: ["Tinker, Tailor, Soldier, Spy","The Honourable Schoolboy"] },
+  { author: "Ursula Le Guin",        books: ["The Farthest Shore","A Wizard of Earthsea"] },
+  { author: "George Orwell",         books: ["1984"] },
+  { author: "Robert Tressell",       books: ["The Ragged Trousered Philanthropist"] },
+  { author: "Tim Butcher",           books: ["Blood River"] },
+  { author: "J. G. Ballard",         books: ["The Drought"] },
+  { author: "James Ellroy",          books: ["The Big Nowhere"] },
+  { author: "Douglas Coupland",      books: ["Life after God"] },
+  { author: "Clive Barker",          books: ["Books of Blood"] },
+  { author: "Philip K. Dick",        books: ["Ubik"] },
+  { author: "Jeanette Winterson",    books: ["Oranges Are Not the Only Fruit"] },
+  { author: "Lucy Montgomery",       books: ["Anne of Green Gables"] },
+  { author: "Bernard Werber",        books: ["Empire of Ants"] },
+  { author: "Douglas Adams",         books: ["The Hitchhiker's Guide to the Galaxy"] },
+  { author: "Ray Bradbury",          books: ["Fahrenheit 451"] },
+  { author: "Jaroslav Foglar",       books: ["The Mystery of the Conundrum"] },
+  { author: "Agatha Christie",       books: ["And Then There Were None"] },
+  { author: "Gene Wolfe",            books: ["Book of the New Sun"] },
+  { author: "Jane Austen",           books: ["Persuasion"] },
+  { author: "Naomi Mitchison",       books: ["Early in Orcadia"] },
+  { author: "Walter M. Miller Jr.",  books: ["A Canticle for Leibowitz"] },
+  { author: "Garth Nix",             books: ["Sabriel"] },
+  { author: "Dan Simmons",           books: ["Hyperion"] },
+  { author: "Margaret Atwood",       books: ["The Year of the Flood"] },
+  { author: "Jasper Fforde",         books: ["Shades of Grey"] },
+  { author: "Brandon Sanderson",     books: ["Mistborn: The Final Empire"] },
+  { author: "Ben Aaronovitch",       books: ["Foxglove Summer"] },
+  { author: "Ernest Cline",          books: ["Ready Player One"] },
+  { author: "Lewis Grassic Gibbon",  books: ["A Scots Quair"] },
+  { author: "Gabriel García Márquez",books: ["Love in a Time of Cholera"] },
+  { author: "J.R.R. Tolkien",        books: ["The Lord of the Rings"] },
+  { author: "James Robertson",       books: ["And the Land Lay Still"] },
+  { author: "Tom Wolfe",             books: ["A Man in Full"] },
+  { author: "John Irving",           books: ["The World According to Garp"] },
+  { author: "Graham Greene",         books: ["Our Man in Havana"] },
+  { author: "Alasdair Gray",         books: ["Lanark"] },
+  { author: "Paul Theroux",          books: ["O-Zone"] },
+  { author: "Peter F. Hamilton",     books: ["Great North Road"] },
+  { author: "Pete McCarthy",         books: ["McCarthy's Bar"] },
+  { author: "Jon Krakauer",          books: ["Into Thin Air"] },
+  { author: "Adam Marek",            books: ["Instruction Manual for Swallowing"] },
+  { author: "Harry Harrison",        books: ["Deathworld 1"] },
+  { author: "Tom Fort",              books: ["The A303: Highway to the Sun"] },
+  { author: "Raymond Carver",        books: ["Will You Please Be Quiet, Please?"] },
+  { author: "Charlotte Mosley",      books: ["The Mitfords: Letters Between Six Sisters"] },
+  { author: "Jorge Luis Borges",     books: ["Collected Fictions"] },
+  { author: "Karel Čapek",           books: ["War with the Newts"] },
+  { author: "Angela Carter",         books: ["Nights at the Circus"] },
+  { author: "Ninni Holmqvist",       books: ["The Unit"] },
+  { author: "Herman Hesse",          books: ["The Glass Bead Game"] },
+  { author: "Ismail Kadare",         books: ["Broken April"] },
+  { author: "Lloyd Alexander",       books: ["Taran Wanderer"] },
+  { author: "Norton Juster",         books: ["The Phantom Tollbooth"] },
+  { author: "Vigdis Hjorth",         books: ["Will and Testament"] },
+  { author: "J.D. Salinger",         books: ["Catcher in the Rye"] },
+  { author: "Kurt Vonnegut",         books: ["Cat's Cradle"] },
+  { author: "James Joyce",           books: ["Ulysses"] },
+  { author: "Grant Morrison",        books: ["The Invisibles"] },
+  { author: "Stephen King",          books: ["On Writing"] },
+  { author: "Jim Butcher",           books: ["The Aeronaut's Windlass"] },
+  { author: "George R.R. Martin",    books: ["A Game of Thrones"] },
+  { author: "Wilson Rawls",          books: ["Where the Red Fern Grows"] },
+  { author: "Tacitus",               books: ["Agricola"] },
+  { author: "Herman Melville",       books: ["Moby Dick"] },
+  { author: "Harper Lee",            books: ["To Kill a Mockingbird"] },
+  { author: "Jack London",           books: ["The Call of the Wild"] },
+  { author: "Susanna Clarke",        books: ["Jonathan Strange & Mr Norrell"] },
+  { author: "William Gibson",        books: ["Neuromancer"] },
+  { author: "David Brin",            books: ["The Uplift War"] },
+  { author: "Rudyard Kipling",       books: ["The Jungle Book"] },
+];
+
+DATA.sort((a,b) => a.author.localeCompare(b.author));
+
+const AUTHOR_FILLS = [
+  '#5c2a0e','#7a3b1e','#8b4513','#6b3a2a','#4a2518',
+  '#7b4f2e','#523022','#6e3d28','#3d1f0f','#5e3018',
+];
+const BOOK_FILLS = [
+  '#2a4a3e','#1e3d32','#2d5a4a','#244038','#1a3028',
+  '#3a5c50','#225042','#2f6050','#183428','#264e40',
+];
+
+const TILE_W  = 100;
+const TILE_H  = 48;
+const BOOK_W  = 108;
+const BOOK_H  = 44;
+
+const canvas  = document.getElementById('c');
+const ctx     = canvas.getContext('2d');
+const tooltip = document.getElementById('tooltip');
+
+let W, H, authorRing, bookNodes, scale = 1;
+let hitAreas = [];
+
+function computeLayout() {
+  const n = DATA.length;
+  const authorR = 550;
+  const bookBaseR = 1000;
+
+  authorRing = [];
+  bookNodes  = [];
+
+  DATA.forEach((d, i) => {
+    const angle = (2 * Math.PI * i / n) - Math.PI / 2;
+    const ax = Math.cos(angle) * authorR;
+    const ay = Math.sin(angle) * authorR;
+    const authorColor = AUTHOR_FILLS[i % AUTHOR_FILLS.length];
+    
+    authorRing.push({ 
+      x: ax, y: ay, angle, data: d, color: authorColor, 
+      idx: i, bookStart: -1, bookCount: d.books.length 
+    });
+  });
+
+  let currentBookGlobalIdx = 0;
+  authorRing.forEach((an) => {
+    an.bookStart = currentBookGlobalIdx;
+    const nb = an.bookCount;
+    const authorArcStep = (2 * Math.PI) / n;
+    const maxFan = authorArcStep * 0.85;
+    const spread = nb === 1 ? 0 : maxFan;
+
+    an.data.books.forEach((book, j) => {
+      const off = nb === 1 ? 0 : (j / (nb - 1) - 0.5) * spread;
+      const bAngle = an.angle + off;
+      const bookR = bookBaseR + (j * 24);
+
+      bookNodes.push({
+        x: Math.cos(bAngle) * bookR,
+        y: Math.sin(bAngle) * bookR,
+        angle: bAngle,
+        book,
+        author: an.data.author,
+        color: BOOK_FILLS[an.idx % BOOK_FILLS.length],
+        authorIdx: an.idx,
+        globalIdx: currentBookGlobalIdx
+      });
+      currentBookGlobalIdx++;
+    });
+  });
+
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  [...authorRing, ...bookNodes].forEach(node => {
+    const hw = (node.data ? TILE_W : BOOK_W) / 2 + 10;
+    const hh = (node.data ? TILE_H : BOOK_H) / 2 + 10;
+    minX = Math.min(minX, node.x - hw);
+    maxX = Math.max(maxX, node.x + hw);
+    minY = Math.min(minY, node.y - hh);
+    maxY = Math.max(maxY, node.y + hh);
+  });
+
+  const pad = 50;
+  W = (maxX - minX) + pad * 2;
+  H = (maxY - minY) + pad * 2;
+
+  const ox = -minX + pad;
+  const oy = -minY + pad;
+  authorRing.forEach(node => { node.cx = node.x + ox; node.cy = node.y + oy; });
+  bookNodes.forEach(node => { node.cx = node.x + ox; node.cy = node.y + oy; });
+
+  return { W, H };
+}
+
+function wrapText(ctx, text, maxW) {
+  const words = text.split(' ');
+  const lines = [];
+  let line = '';
+  for (const w of words) {
+    const test = line ? line + ' ' + w : w;
+    if (ctx.measureText(test).width > maxW && line) {
+      lines.push(line);
+      line = w;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+function drawTile(ctx, cx, cy, w, h, fill, text, subtext, highlighted) {
+  const r = 3;
+  ctx.save();
+
+  ctx.shadowColor = 'rgba(0,0,0,0.28)';
+  ctx.shadowBlur  = highlighted ? 14 : 6;
+  ctx.shadowOffsetX = 1; ctx.shadowOffsetY = 2;
+
+  ctx.fillStyle = fill;
+  roundRect(ctx, cx - w/2, cy - h/2, w, h, r);
+  ctx.fill();
+
+  ctx.shadowColor = 'transparent';
+
+  ctx.strokeStyle = highlighted ? '#f0c060' : 'rgba(201,150,58,0.6)';
+  ctx.lineWidth   = highlighted ? 1.8 : 0.8;
+  roundRect(ctx, cx - w/2, cy - h/2, w, h, r);
+  ctx.stroke();
+
+  ctx.fillStyle = '#f5edd8';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const innerW = w - 10;
+  ctx.font = 'bold 10px "Courier Prime", monospace';
+  const lines = wrapText(ctx, text, innerW);
+  const totalH = lines.length * 13;
+
+  if (subtext) {
+    const startY = cy - totalH/2 - 1;
+    lines.forEach((l, i) => { ctx.fillText(l, cx, startY + i * 13); });
+    ctx.font = '8px "Courier Prime", monospace';
+    ctx.fillStyle = 'rgba(245,237,216,0.65)';
+    ctx.fillText(subtext, cx, cy + totalH/2 + 7);
+  } else {
+    const startY = cy - (totalH - 13) / 2;
+    lines.forEach((l, i) => { ctx.fillText(l, cx, startY + i * 13); });
+  }
+
+  ctx.restore();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function drawLine(ctx, x1, y1, x2, y2, highlighted) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.strokeStyle = highlighted ? 'rgba(201,150,58,0.95)' : 'rgba(139,115,85,0.25)';
+  ctx.lineWidth   = highlighted ? 2.0 : 0.7;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function draw(hovered = null) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  hitAreas = [];
+
+  ctx.fillStyle = '#f5edd8';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  let sumX = 0, sumY = 0;
+  authorRing.forEach(n => { sumX += n.cx; sumY += n.cy; });
+  const cX = sumX / authorRing.length;
+  const cY = sumY / authorRing.length;
+
+  ctx.save();
+  ctx.strokeStyle = 'rgba(139,115,85,0.08)';
+  ctx.lineWidth = 0.5;
+  ctx.setLineDash([3,5]);
+  [550, 1000].forEach(r => {
+    ctx.beginPath();
+    ctx.arc(cX, cY, r, 0, Math.PI * 2);
+    ctx.stroke();
+  });
+  ctx.restore();
+
+  ctx.save();
+  ctx.font = 'italic 14px "Playfair Display", serif';
+  ctx.fillStyle = 'rgba(139,90,43,0.22)';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('The Raspy Raven', cX, cY - 10);
+  ctx.font = '9px "Courier Prime", monospace';
+  ctx.fillStyle = 'rgba(139,90,43,0.15)';
+  ctx.fillText('Book Poll Framework', cX, cY + 8);
+  ctx.restore();
+
+  // Arrays to hold the active elements that need to be drawn LAST (on top)
+  const backgroundLines = [];
+  const foregroundLines = [];
+  const backgroundBooks = [];
+  const foregroundBooks = [];
+  const backgroundAuthors = [];
+  const foregroundAuthors = [];
+
+  // 1. Process Connection Lines
+  bookNodes.forEach((bn) => {
+    const an = authorRing[bn.authorIdx];
+    const isLit = hovered !== null && (
+      (hovered.type === 'author' && hovered.idx === bn.authorIdx) ||
+      (hovered.type === 'book' && hovered.idx === bn.globalIdx)
+    );
+    
+    if (isLit) {
+      foregroundLines.push({ an, bn });
+    } else {
+      backgroundLines.push({ an, bn });
+    }
+  });
+
+  // 2. Process Book Nodes
+  bookNodes.forEach((bn) => {
+    const isLit = hovered !== null && (
+      (hovered.type === 'author' && hovered.idx === bn.authorIdx) ||
+      (hovered.type === 'book' && hovered.idx === bn.globalIdx)
+    );
+    
+    hitAreas.push({ type: 'book', idx: bn.globalIdx, x: bn.cx, y: bn.cy, w: BOOK_W, h: BOOK_H, data: bn });
+    
+    if (isLit) {
+      foregroundBooks.push(bn);
+    } else {
+      backgroundBooks.push(bn);
+    }
+  });
+
+  // 3. Process Author Nodes
+  authorRing.forEach((an) => {
+    const isLit = hovered !== null && (
+      (hovered.type === 'author' && hovered.idx === an.idx) ||
+      (nodeIsBookAndBelongsToAuthor(hovered, an.idx))
+    );
+    
+    hitAreas.push({ type: 'author', idx: an.idx, x: an.cx, y: an.cy, w: TILE_W, h: TILE_H, data: an });
+    
+    if (isLit) {
+      foregroundAuthors.push(an);
+    } else {
+      backgroundAuthors.push(an);
+    }
+  });
+
+  // ─── EXECUTE DRAWING IN LAYER ORDERS ───
+  
+  // A. Background layers (non-hovered items)
+  backgroundLines.forEach(line => drawLine(ctx, line.an.cx, line.an.cy, line.bn.cx, line.bn.cy, false));
+  backgroundBooks.forEach(bn => drawTile(ctx, bn.cx, bn.cy, BOOK_W, BOOK_H, bn.color, bn.book, null, false));
+  backgroundAuthors.forEach(an => drawTile(ctx, an.cx, an.cy, TILE_W, TILE_H, an.color, an.data.author, `${an.bookCount} book${an.bookCount > 1 ? 's' : ''}`, false));
+
+  // B. Foreground layers (hovered items — drawn last to be brought to front)
+  foregroundLines.forEach(line => drawLine(ctx, line.an.cx, line.an.cy, line.bn.cx, line.bn.cy, true));
+  foregroundBooks.forEach(bn => drawTile(ctx, bn.cx, bn.cy, BOOK_W, BOOK_H, '#1a4a3a', bn.book, null, true));
+  foregroundAuthors.forEach(an => drawTile(ctx, an.cx, an.cy, TILE_W, TILE_H, '#7a2a0e', an.data.author, `${an.bookCount} book${an.bookCount > 1 ? 's' : ''}`, true));
+}
+
+function nodeIsBookAndBelongsToAuthor(hoveredNode, authorIdx) {
+  return hoveredNode !== null && hoveredNode.type === 'book' && hoveredNode.data.authorIdx === authorIdx;
+}
+
+function resize() {
+  const { W: cw, H: ch } = computeLayout();
+  const maxW = window.innerWidth - 32;
+  scale = Math.min(1, maxW / cw);
+  canvas.width  = Math.round(cw * scale);
+  canvas.height = Math.round(ch * scale);
+  canvas.style.width  = canvas.width  + 'px';
+  canvas.style.height = canvas.height + 'px';
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  draw(null);
+}
+
+function hitTest(ex, ey) {
+  const rect = canvas.getBoundingClientRect();
+  const lx = (ex - rect.left) / scale;
+  const ly = (ey - rect.top)  / scale;
+  for (let i = hitAreas.length - 1; i >= 0; i--) {
+    const a = hitAreas[i];
+    if (Math.abs(lx - a.x) < a.w/2 && Math.abs(ly - a.y) < a.h/2) return { ...a };
+  }
+  return null;
+}
+
+canvas.addEventListener('mousemove', e => {
+  const hit = hitTest(e.clientX, e.clientY);
+  canvas.style.cursor = hit ? 'pointer' : 'default';
+
+  if (hit) {
+    draw(hit);
+    let html;
+    if (hit.type === 'author') {
+      const d = hit.data.data;
+      html = `<strong>${d.author}</strong><br>${d.books.map(b => '· ' + b).join('<br>')}`;
+    } else {
+      html = `<em>${hit.data.book}</em><br><span style="opacity:.7">${hit.data.author}</span>`;
+    }
+    tooltip.innerHTML = html;
+    tooltip.classList.add('visible');
+    tooltip.style.left = (e.clientX + 14) + 'px';
+    tooltip.style.top  = (e.clientY - 10) + 'px';
+  } else {
+    draw(null);
+    tooltip.classList.remove('visible');
+  }
+});
+
+canvas.addEventListener('mouseleave', () => {
+  draw(null);
+  tooltip.classList.remove('visible');
+  canvas.style.cursor = 'default';
+});
+
+window.addEventListener('resize', resize);
+resize();
+</script>
+</body>
+</html>
