@@ -1,570 +1,1681 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Raspy Raven — Book Poll</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Courier+Prime:ital@0;1&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --ink: #1a1208;
-    --parchment: #f5edd8;
-    --aged: #e8d9b8;
-    --rust: #8b3a2a;
-    --gold: #c9963a;
-    --shadow: rgba(26,18,8,0.18);
-    --line: #8b7355;
-  }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Raspy Raven — Interactive Book Gallery</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Google Fonts matching the parchment index styling -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Courier+Prime:ital@0;1&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --ink: #1a1208;
+            --parchment: #f5edd8;
+            --aged: #e8d9b8;
+            --rust: #8b3a2a;
+            --gold: #c9963a;
+            --shadow: rgba(26,18,8,0.18);
+            --line: #8b7355;
+        }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--parchment);
+            font-family: 'Courier Prime', monospace;
+            color: var(--ink);
+        }
 
-  body {
-    background: var(--parchment);
-    font-family: 'Courier Prime', monospace;
-    color: var(--ink);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+        /* Subtle paper texture overlay matching index.html */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 10;
+        }
 
-  /* Subtle paper texture overlay */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 0;
-  }
+        .serif-font {
+            font-family: 'Playfair Display', serif;
+        }
 
-  header {
-    text-align: center;
-    padding: 3rem 2rem 1.5rem;
-    position: relative;
-    z-index: 1;
-  }
+        /* Rule line decorations matching index.html */
+        .rule {
+            width: 120px;
+            height: 1px;
+            background: var(--gold);
+            margin: 1.2rem auto;
+            position: relative;
+        }
+        .rule::before, .rule::after {
+            content: '◆';
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.5rem;
+            color: var(--gold);
+        }
+        .rule::before { left: -14px; }
+        .rule::after  { right: -14px; }
 
-  .title-raven {
-    font-size: 0.9rem;
-    letter-spacing: 0.35em;
-    text-transform: uppercase;
-    color: var(--rust);
-    margin-bottom: 0.5rem;
-  }
-
-  h1 {
-    font-family: 'Playfair Display', serif;
-    font-size: clamp(2.2rem, 5vw, 3.8rem);
-    font-weight: 700;
-    line-height: 1.1;
-    color: var(--ink);
-  }
-
-  h1 em {
-    font-style: italic;
-    color: var(--rust);
-  }
-
-  .subtitle {
-    font-size: 0.8rem;
-    letter-spacing: 0.2em;
-    color: var(--line);
-    margin-top: 0.7rem;
-    text-transform: uppercase;
-  }
-
-  .rule {
-    width: 120px;
-    height: 1px;
-    background: var(--gold);
-    margin: 1.2rem auto;
-    position: relative;
-  }
-  .rule::before, .rule::after {
-    content: '◆';
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 0.5rem;
-    color: var(--gold);
-  }
-  .rule::before { left: -14px; }
-  .rule::after  { right: -14px; }
-
-  /* Canvas container */
-  #canvas-wrap {
-    position: relative;
-    z-index: 1;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-  }
-
-  canvas {
-    display: block;
-    max-width: 100%;
-  }
-
-  footer {
-    text-align: center;
-    padding: 2rem;
-    font-size: 0.72rem;
-    color: var(--line);
-    letter-spacing: 0.15em;
-    position: relative;
-    z-index: 1;
-  }
-
-  /* Tooltip */
-  #tooltip {
-    position: fixed;
-    background: var(--ink);
-    color: var(--parchment);
-    font-family: 'Courier Prime', monospace;
-    font-size: 0.78rem;
-    padding: 0.5rem 0.8rem;
-    border-radius: 2px;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.15s;
-    z-index: 1000;
-    max-width: 220px;
-    line-height: 1.4;
-    border-left: 3px solid var(--gold);
-  }
-  #tooltip.visible { opacity: 1; }
-</style>
+        /* Custom smooth horizontal scrollbar for the book rows */
+        .books-scrollbar::-webkit-scrollbar {
+            height: 5px;
+        }
+        .books-scrollbar::-webkit-scrollbar-track {
+            background: rgba(139, 115, 85, 0.1);
+            border-radius: 4px;
+        }
+        .books-scrollbar::-webkit-scrollbar-thumb {
+            background: var(--line);
+            opacity: 0.4;
+            border-radius: 4px;
+        }
+        .books-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: var(--rust);
+        }
+    </style>
 </head>
-<body>
+<body class="min-h-screen relative selection:bg-[#8b3a2a] selection:text-[#f5edd8] pb-12">
 
-<header>
-  <div class="title-raven">☽ The Raspy Raven ☾</div>
-  <h1>The <em>Great</em> Book Poll</h1>
-  <div class="rule"></div>
-  <div class="subtitle">84 nominations &nbsp;·&nbsp; 9 readers &nbsp;·&nbsp; 76 authors</div>
-</header>
+    <!-- Header Block -->
+    <header class="text-center pt-12 pb-6 px-4 relative z-20">
+        <div class="text-xs font-bold tracking-[0.35em] text-[#8b3a2a] uppercase mb-2">☽ The Raspy Raven ☾</div>
+        <h1 class="serif-font text-3xl md:text-5xl font-bold tracking-tight text-[#1a1208]">
+            The Great <span class="italic text-[#8b3a2a]">Book Gallery</span>
+        </h1>
+        <div class="rule"></div>
+        
+        <!-- Live Counters Panel styled down into parchment blocks -->
+        <div class="max-w-xl mx-auto mt-4 grid grid-cols-3 gap-2 text-[11px] uppercase tracking-wider text-[#8b7355] font-bold">
+            <div class="bg-[#e8d9b8]/40 border border-[#8b7355]/30 rounded px-2 py-3 shadow-xs">
+                <span id="stat-authors" class="block text-base font-bold text-[#8b3a2a] mb-0.5">0</span> Authors
+            </div>
+            <div class="bg-[#e8d9b8]/40 border border-[#8b7355]/30 rounded px-2 py-3 shadow-xs">
+                <span id="stat-books" class="block text-base font-bold text-[#1a1208] mb-0.5">0</span> Nominations
+            </div>
+            <div class="bg-[#e8d9b8]/40 border border-[#8b7355]/30 rounded px-2 py-3 shadow-xs">
+                <span id="stat-votes" class="block text-base font-bold text-[#c9963a] mb-0.5">0</span> Total Votes
+            </div>
+        </div>
+    </header>
 
-<div id="canvas-wrap">
-  <canvas id="c"></canvas>
-</div>
+    <!-- Controls Toolbar -->
+    <main class="max-w-7xl mx-auto px-4 mt-4 relative z-20">
+        <div class="mb-8 bg-[#e8d9b8]/30 border border-[#8b7355]/40 rounded-lg p-4 flex flex-col sm:flex-row gap-4 justify-between items-center shadow-xs">
+            <div class="relative w-full sm:w-72">
+                <input type="text" id="search-input" placeholder="Search author or title..." 
+                       class="w-full bg-[#f5edd8] text-[#1a1208] font-mono text-xs pl-3 pr-8 py-2 rounded border border-[#8b7355]/60 focus:outline-none focus:border-[#8b3a2a] transition placeholder-[#8b7355]/60 shadow-inner">
+                <span class="absolute right-2.5 top-2.5 text-[#8b7355] text-xs">🔍</span>
+            </div>
+            <div class="text-[11px] text-[#8b7355] text-center sm:text-right font-mono max-w-md leading-relaxed">
+                <span class="text-[#8b3a2a] font-bold">◆ Interactive Archive:</span> Hover over any book item to reveal detail overlays dynamically.
+            </div>
+        </div>
 
-<div id="tooltip"></div>
+        <!-- Shelf Grid Rows Container with smart resizing responsive wrap layout -->
+        <div id="gallery-shelf" class="flex flex-wrap gap-5 justify-start items-start">
+            <!-- JavaScript appends blocks dynamically here -->
+        </div>
+    </main>
 
-<footer>Authors in the inner ring · Books radiate outward · Hover to explore</footer>
+    <!-- Footer Description -->
+    <footer class="text-center mt-16 text-[10px] text-[#8b7355] uppercase tracking-[0.2em] relative z-20">
+        <p>The Raspy Raven Book Poll Archive · Built with Vintage Textures</p>
+    </footer>
 
-<script>
-const DATA = [
-  { author: "Terry Pratchett",       books: ["Jingo","Guards, Guards","Thud","Men at Arms"] },
-  { author: "Iain Banks",            books: ["The Wasp Factory","The Steep Approach to Garbadale","The Player of Games"] },
-  { author: "Umberto Eco",           books: ["Foucault's Pendulum","The Name of the Rose"] },
-  { author: "Joe Abercrombie",       books: ["Half a King","Red Country"] },
-  { author: "John le Carré",         books: ["Tinker, Tailor, Soldier, Spy","The Honourable Schoolboy"] },
-  { author: "Ursula Le Guin",        books: ["The Farthest Shore","A Wizard of Earthsea"] },
-  { author: "George Orwell",         books: ["1984"] },
-  { author: "Robert Tressell",       books: ["The Ragged Trousered Philanthropist"] },
-  { author: "Tim Butcher",           books: ["Blood River"] },
-  { author: "J. G. Ballard",         books: ["The Drought"] },
-  { author: "James Ellroy",          books: ["The Big Nowhere"] },
-  { author: "Douglas Coupland",      books: ["Life after God"] },
-  { author: "Clive Barker",          books: ["Books of Blood"] },
-  { author: "Philip K. Dick",        books: ["Ubik"] },
-  { author: "Jeanette Winterson",    books: ["Oranges Are Not the Only Fruit"] },
-  { author: "Lucy Montgomery",       books: ["Anne of Green Gables"] },
-  { author: "Bernard Werber",        books: ["Empire of Ants"] },
-  { author: "Douglas Adams",         books: ["The Hitchhiker's Guide to the Galaxy"] },
-  { author: "Ray Bradbury",          books: ["Fahrenheit 451"] },
-  { author: "Jaroslav Foglar",       books: ["The Mystery of the Conundrum"] },
-  { author: "Agatha Christie",       books: ["And Then There Were None"] },
-  { author: "Gene Wolfe",            books: ["Book of the New Sun"] },
-  { author: "Jane Austen",           books: ["Persuasion"] },
-  { author: "Naomi Mitchison",       books: ["Early in Orcadia"] },
-  { author: "Walter M. Miller Jr.",  books: ["A Canticle for Leibowitz"] },
-  { author: "Garth Nix",             books: ["Sabriel"] },
-  { author: "Dan Simmons",           books: ["Hyperion"] },
-  { author: "Margaret Atwood",       books: ["The Year of the Flood"] },
-  { author: "Jasper Fforde",         books: ["Shades of Grey"] },
-  { author: "Brandon Sanderson",     books: ["Mistborn: The Final Empire"] },
-  { author: "Ben Aaronovitch",       books: ["Foxglove Summer"] },
-  { author: "Ernest Cline",          books: ["Ready Player One"] },
-  { author: "Lewis Grassic Gibbon",  books: ["A Scots Quair"] },
-  { author: "Gabriel García Márquez",books: ["Love in a Time of Cholera"] },
-  { author: "J.R.R. Tolkien",        books: ["The Lord of the Rings"] },
-  { author: "James Robertson",       books: ["And the Land Lay Still"] },
-  { author: "Tom Wolfe",             books: ["A Man in Full"] },
-  { author: "John Irving",           books: ["The World According to Garp"] },
-  { author: "Graham Greene",         books: ["Our Man in Havana"] },
-  { author: "Alasdair Gray",         books: ["Lanark"] },
-  { author: "Paul Theroux",          books: ["O-Zone"] },
-  { author: "Peter F. Hamilton",     books: ["Great North Road"] },
-  { author: "Pete McCarthy",         books: ["McCarthy's Bar"] },
-  { author: "Jon Krakauer",          books: ["Into Thin Air"] },
-  { author: "Adam Marek",            books: ["Instruction Manual for Swallowing"] },
-  { author: "Harry Harrison",        books: ["Deathworld 1"] },
-  { author: "Tom Fort",              books: ["The A303: Highway to the Sun"] },
-  { author: "Raymond Carver",        books: ["Will You Please Be Quiet, Please?"] },
-  { author: "Charlotte Mosley",      books: ["The Mitfords: Letters Between Six Sisters"] },
-  { author: "Jorge Luis Borges",     books: ["Collected Fictions"] },
-  { author: "Karel Čapek",           books: ["War with the Newts"] },
-  { author: "Angela Carter",         books: ["Nights at the Circus"] },
-  { author: "Ninni Holmqvist",       books: ["The Unit"] },
-  { author: "Herman Hesse",          books: ["The Glass Bead Game"] },
-  { author: "Ismail Kadare",         books: ["Broken April"] },
-  { author: "Lloyd Alexander",       books: ["Taran Wanderer"] },
-  { author: "Norton Juster",         books: ["The Phantom Tollbooth"] },
-  { author: "Vigdis Hjorth",         books: ["Will and Testament"] },
-  { author: "J.D. Salinger",         books: ["Catcher in the Rye"] },
-  { author: "Kurt Vonnegut",         books: ["Cat's Cradle"] },
-  { author: "James Joyce",           books: ["Ulysses"] },
-  { author: "Grant Morrison",        books: ["The Invisibles"] },
-  { author: "Stephen King",          books: ["On Writing"] },
-  { author: "Jim Butcher",           books: ["The Aeronaut's Windlass"] },
-  { author: "George R.R. Martin",    books: ["A Game of Thrones"] },
-  { author: "Wilson Rawls",          books: ["Where the Red Fern Grows"] },
-  { author: "Tacitus",               books: ["Agricola"] },
-  { author: "Herman Melville",       books: ["Moby Dick"] },
-  { author: "Harper Lee",            books: ["To Kill a Mockingbird"] },
-  { author: "Jack London",           books: ["The Call of the Wild"] },
-  { author: "Susanna Clarke",        books: ["Jonathan Strange & Mr Norrell"] },
-  { author: "William Gibson",        books: ["Neuromancer"] },
-  { author: "David Brin",            books: ["The Uplift War"] },
-  { author: "Rudyard Kipling",       books: ["The Jungle Book"] },
+    <!-- Interactive script runtime execution -->
+    <script>
+        // Injected data payload from CSV parser
+        const libraryPayload = [
+  {
+    "author": "Adam Marek",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Instruction Manual for Swallowing",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/7636501-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Agatha Christie",
+    "author_image": "",
+    "books": [
+      {
+        "title": "And Then There Were None",
+        "votes": 2,
+        "cover_url": "https://covers.openlibrary.org/b/id/11172296-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Alan Moore",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The League of Extraordinary Gentlemen",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/748725-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Alasdair Gray",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Lanark",
+        "votes": 2,
+        "cover_url": "https://covers.openlibrary.org/b/id/8281998-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Angela Carter",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Nights at the Circus",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/7476202-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Anne Rice",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Interview with the Vampire",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/8401488-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Anthony Burgess",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Earthly Powers",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/11270687-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Arthur Conan Doyle",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Complete Sherlock Holmes",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/12501284-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Arthur Koestler",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Darkness at Noon",
+        "votes": 1,
+        "cover_url": ""
+      }
+    ]
+  },
+  {
+    "author": "Ben Aaronovitch",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Foxglove Summer",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/11344405-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Bernard Werber",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Empire of Ants",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/6614206-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Brandon Sanderson",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Mistborn: The Final Empire",
+        "votes": 1,
+        "cover_url": ""
+      }
+    ]
+  },
+  {
+    "author": "C.S. Lewis",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Lion, the Witch and the Wardrobe",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/8441376-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Carlos Ruiz Zaf\u00f3n",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Shadow of the Wind",
+        "votes": 1,
+        "cover_url": ""
+      }
+    ]
+  },
+  {
+    "author": "Carson McCullers",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Heart is a Lonely Hunter",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/394799-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Charlotte Mosley",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Mitfords: Letters between Six Sisters",
+        "votes": 1,
+        "cover_url": ""
+      }
+    ]
+  },
+  {
+    "author": "Clive Barker",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Books of Blood",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/271223-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Cordwainer Smith",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Norstrilia",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/705501-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Dan Simmons",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Hyperion",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/380332-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "David Brin",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Uplift War",
+        "votes": 2,
+        "cover_url": "https://covers.openlibrary.org/b/id/6572753-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Dodie Smith",
+    "author_image": "",
+    "books": [
+      {
+        "title": "I Capture the Castle",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/5080686-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Douglas Adams",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Hitchhiker's Guide to the Galaxy",
+        "votes": 2,
+        "cover_url": "https://covers.openlibrary.org/b/id/11972784-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Douglas Coupland",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Life After God",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/409389-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Elizabeth Cook",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Achilles",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/179382-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Ernest Cline",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Ready Player One",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/8737626-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Ferenc Karinthy",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Metropole",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/9252284-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Frances Hardinge",
+    "author_image": "",
+    "books": [
+      {
+        "title": "A Face Like Glass",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/7468310-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Frank Herbert",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Dune",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/11481354-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Gabriel Garc\u00eda M\u00e1rquez",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Love in the Time of Cholera",
+        "votes": 1,
+        "cover_url": ""
+      }
+    ]
+  },
+  {
+    "author": "Garth Nix",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Sabriel",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/13165306-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Gene Wolfe",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Book of the New Sun",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/11305529-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "George Orwell",
+    "author_image": "",
+    "books": [
+      {
+        "title": "1984",
+        "votes": 2,
+        "cover_url": "https://covers.openlibrary.org/b/id/8745958-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "George R.R. Martin",
+    "author_image": "",
+    "books": [
+      {
+        "title": "A Game of Thrones",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/9269962-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Graham Greene",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Our Man in Havana",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/15130107-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Grant Morrison",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Invisibles",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/798572-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Greg Egan",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Permutation City",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/1000639-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Harper Lee",
+    "author_image": "",
+    "books": [
+      {
+        "title": "To Kill a Mockingbird",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/14351077-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Harry Harrison",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Deathworld",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/458767-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Herman Melville",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Moby-Dick",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/10544254-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Hermann Hesse",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Glass Bead Game",
+        "votes": 1,
+        "cover_url": ""
+      }
+    ]
+  },
+  {
+    "author": "Hilary Mantel",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Wolf Hall",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/8345848-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Homer",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Iliad",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/12621988-M.jpg"
+      },
+      {
+        "title": "The Odyssey",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/12474938-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Iain Banks",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Steep Approach to Garbadale",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/189952-M.jpg"
+      },
+      {
+        "title": "The Wasp Factory",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/427635-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Iain M. Banks",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Player of Games",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/44077-M.jpg"
+      },
+      {
+        "title": "Use of Weapons",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/2379038-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Iain Pears",
+    "author_image": "",
+    "books": [
+      {
+        "title": "An Instance of the Fingerpost",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/824348-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Iris Murdoch",
+    "author_image": "",
+    "books": [
+      {
+        "title": "A Fairly Honourable Defeat",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/108039-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Ismail Kadare",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Broken April",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/1609425-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Italo Calvino",
+    "author_image": "",
+    "books": [
+      {
+        "title": "If on a Winter's Night a Traveller",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/12007967-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "J.D. Salinger",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Catcher in the Rye",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/9273490-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "J.G. Ballard",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Drought",
+        "votes": 1,
+        "cover_url": ""
+      }
+    ]
+  },
+  {
+    "author": "J.R.R. Tolkien",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Lord of the Rings",
+        "votes": 2,
+        "cover_url": "https://covers.openlibrary.org/b/id/14625765-M.jpg"
+      },
+      {
+        "title": "The Hobbit",
+        "votes": 2,
+        "cover_url": "https://covers.openlibrary.org/b/id/14627509-M.jpg"
+      },
+      {
+        "title": "The Silmarillion",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/14627042-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Jack London",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Call of the Wild",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/12393037-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "James Ellroy",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Big Nowhere",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/3233404-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "James Joyce",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Ulysses",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/13136548-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "James Robertson",
+    "author_image": "",
+    "books": [
+      {
+        "title": "And the Land Lay Still",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/12579189-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Jan Potocki",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Manuscript Found in Saragossa",
+        "votes": 1,
+        "cover_url": ""
+      }
+    ]
+  },
+  {
+    "author": "Jane Austen",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Persuasion",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/12824691-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Jaroslav Foglar",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Z\u00e1hada Hlavolamu",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/15148802-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Jasper Fforde",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Shades of Grey",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/2546934-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Jeanette Winterson",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Oranges Are Not the Only Fruit",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/10369574-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Jim Butcher",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Aeronaut's Windlass",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/8197336-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Joe Abercrombie",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Half a King",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/14543404-M.jpg"
+      },
+      {
+        "title": "Red Country",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/14595641-M.jpg"
+      },
+      {
+        "title": "The Blade Itself",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/14543422-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Joe Haldeman",
+    "author_image": "",
+    "books": [
+      {
+        "title": "All My Sins Remembered",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/9633479-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "John Fowles",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Magus",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/5424278-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "John Irving",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The World According to Garp",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/13080378-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "John Varley",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Gaea Trilogy",
+        "votes": 1,
+        "cover_url": ""
+      }
+    ]
+  },
+  {
+    "author": "John le Carr\u00e9",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Honourable Schoolboy",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/2398611-M.jpg"
+      },
+      {
+        "title": "Tinker, Tailor, Soldier, Spy",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/7021556-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Jon Krakauer",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Into Thin Air",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/241603-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Jorge Luis Borges",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Collected Fictions",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/13258348-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Julian May",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Many-Coloured Land",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/2385748-M.jpg"
+      },
+      {
+        "title": "The Saga of Exiles",
+        "votes": 1,
+        "cover_url": ""
+      }
+    ]
+  },
+  {
+    "author": "Karel \u010capek",
+    "author_image": "",
+    "books": [
+      {
+        "title": "War with the Newts",
+        "votes": 1,
+        "cover_url": ""
+      }
+    ]
+  },
+  {
+    "author": "Kelly Barnhill",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Girl Who Drank the Moon",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/7903958-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Kurt Vonnegut",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Cat's Cradle",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/12709654-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "L.M. Montgomery",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Anne of Green Gables",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/14641084-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Lewis Carroll",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Through the Looking-Glass",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/11272464-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Lewis Grassic Gibbon",
+    "author_image": "",
+    "books": [
+      {
+        "title": "A Scots Quair",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/11477126-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Lloyd Alexander",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Taran Wanderer",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/747261-M.jpg"
+      },
+      {
+        "title": "The Black Cauldron",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/580387-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Margaret Atwood",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Year of the Flood",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/12816870-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Mary Chase",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Harvey",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/5316648-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Naomi Mitchison",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Early in Orcadia",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/12698365-M.jpg"
+      },
+      {
+        "title": "Travel Light",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/957052-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Natsuo Kirino",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Out",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/6802451-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Nigel Balchin",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Borgia Testament",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/7024911-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Ninni Holmqvist",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Unit",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/6797743-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Norton Juster",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Phantom Tollbooth",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/8578174-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Oscar Wilde",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Importance of Being Earnest",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/1260453-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Patricia Highsmith",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Talented Mr. Ripley",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/2198258-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Paul Theroux",
+    "author_image": "",
+    "books": [
+      {
+        "title": "O-Zone",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/4165961-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Pete McCarthy",
+    "author_image": "",
+    "books": [
+      {
+        "title": "McCarthy's Bar",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/179391-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Peter Ackroyd",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Hawksmoor",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/96542-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Peter F. Hamilton",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Great North Road",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/7260146-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Philip K. Dick",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Ubik",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/5018327-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Ray Bradbury",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Fahrenheit 451",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/12993656-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Raymond Carver",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Will You Please Be Quiet, Please?",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/420231-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Raymond E. Feist",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Magician",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/1005965-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Robert Anton Wilson",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Illuminatus!",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/283212-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Robert Louis Stevenson",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Treasure Island",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/13859660-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Robert Tressell",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Ragged Trousered Philanthropists",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/8997724-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Robin McKinley",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Hero and the Crown",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/6987328-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Rosalind Ashe",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Moths",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/4448505-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Rudyard Kipling",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Jungle Book",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/3344204-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Russell Hoban",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Riddley Walker",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/8510440-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Sally Rooney",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Normal People",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/8794265-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Stephen King",
+    "author_image": "",
+    "books": [
+      {
+        "title": "On Writing",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/9255939-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Susan Cooper",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Dark is Rising",
+        "votes": 2,
+        "cover_url": "https://covers.openlibrary.org/b/id/9363540-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Susanna Clarke",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Jonathan Strange & Mr Norrell",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/525391-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "T.H. White",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Once and Future King",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/6630521-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Tacitus",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Agricola",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/8246133-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Terry Pratchett",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Guards! Guards!",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/13095550-M.jpg"
+      },
+      {
+        "title": "Jingo",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/14649227-M.jpg"
+      },
+      {
+        "title": "Men at Arms",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/14648019-M.jpg"
+      },
+      {
+        "title": "Mort",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/14648805-M.jpg"
+      },
+      {
+        "title": "The Last Hero",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/14645749-M.jpg"
+      },
+      {
+        "title": "Thud!",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/14645706-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Tim Butcher",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Blood River",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/447655-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Tom Fort",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The A303: Highway to the Sun",
+        "votes": 1,
+        "cover_url": ""
+      }
+    ]
+  },
+  {
+    "author": "Tom Wolfe",
+    "author_image": "",
+    "books": [
+      {
+        "title": "A Man in Full",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/8278721-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Umberto Eco",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Foucault's Pendulum",
+        "votes": 1,
+        "cover_url": ""
+      },
+      {
+        "title": "The Name of the Rose",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/15023290-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Ursula K. Le Guin",
+    "author_image": "",
+    "books": [
+      {
+        "title": "A Wizard of Earthsea",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/13617691-M.jpg"
+      },
+      {
+        "title": "The Dispossessed",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/6979680-M.jpg"
+      },
+      {
+        "title": "The Farthest Shore",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/6498990-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Vasily Grossman",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Life and Fate",
+        "votes": 1,
+        "cover_url": ""
+      }
+    ]
+  },
+  {
+    "author": "Vigdis Hjorth",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Will and Testament",
+        "votes": 1,
+        "cover_url": ""
+      }
+    ]
+  },
+  {
+    "author": "Walter M. Miller Jr.",
+    "author_image": "",
+    "books": [
+      {
+        "title": "A Canticle for Leibowitz",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/10221348-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "William Gibson",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Neuromancer",
+        "votes": 2,
+        "cover_url": "https://covers.openlibrary.org/b/id/283860-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "William Golding",
+    "author_image": "",
+    "books": [
+      {
+        "title": "The Inheritors",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/376497-M.jpg"
+      }
+    ]
+  },
+  {
+    "author": "Wilson Rawls",
+    "author_image": "",
+    "books": [
+      {
+        "title": "Where the Red Fern Grows",
+        "votes": 1,
+        "cover_url": "https://covers.openlibrary.org/b/id/7996608-M.jpg"
+      }
+    ]
+  }
 ];
 
-DATA.sort((a,b) => a.author.localeCompare(b.author));
+        // Synchronize and render header counter components
+        function initMetrics(items) {
+            document.getElementById('stat-authors').innerText = items.length;
+            let books = 0;
+            let votes = 0;
+            items.forEach(a => {
+                books += a.books.length;
+                a.books.forEach(b => votes += b.votes);
+            });
+            document.getElementById('stat-books').innerText = books;
+            document.getElementById('stat-votes').innerText = votes;
+        }
 
-const AUTHOR_FILLS = [
-  '#5c2a0e','#7a3b1e','#8b4513','#6b3a2a','#4a2518',
-  '#7b4f2e','#523022','#6e3d28','#3d1f0f','#5e3018',
-];
-const BOOK_FILLS = [
-  '#2a4a3e','#1e3d32','#2d5a4a','#244038','#1a3028',
-  '#3a5c50','#225042','#2f6050','#183428','#264e40',
-];
+        // Generate matching initials if direct asset string is down or faulty
+        function getInitials(name) {
+            return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+        }
 
-const TILE_W  = 100;
-const TILE_H  = 48;
-const BOOK_W  = 108;
-const BOOK_H  = 44;
+        // Draw structural shelf component layouts with strict specified viewport classes
+        function renderShelfLayout(items) {
+            const shelf = document.getElementById('gallery-shelf');
+            shelf.innerHTML = '';
 
-const canvas  = document.getElementById('c');
-const ctx     = canvas.getContext('2d');
-const tooltip = document.getElementById('tooltip');
+            if (items.length === 0) {
+                shelf.innerHTML = `
+                    <div class="w-full text-center py-16 font-mono text-xs text-[#8b7355] border border-dashed border-[#8b7355]/40 rounded bg-[#e8d9b8]/10">
+                        No archive records correspond to your filter query.
+                    </div>`;
+                return;
+            }
 
-let W, H, authorRing, bookNodes, scale = 1;
-let hitAreas = [];
+            items.forEach(record => {
+                // Main split card container using the specified responsive widths
+                const card = document.createElement('div');
+                card.className = "w-full md:w-[calc(50%-10px)] xl:w-[calc(33.33%-14px)] flex flex-col p-4 rounded bg-[#e8d9b8]/20 border border-[#8b7355]/30 shadow-xs transition duration-150 hover:bg-[#e8d9b8]/30 hover:border-[#8b7355]/50 shrink-0";
 
-function computeLayout() {
-  const n = DATA.length;
-  const authorR = 550;
-  const bookBaseR = 1000;
+                // AUTHOR HEADER MODULE
+                const header = document.createElement('div');
+                header.className = "flex flex-row gap-3 items-center border-b border-[#8b7355]/20 pb-3 w-full";
 
-  authorRing = [];
-  bookNodes  = [];
+                const authorAvatar = document.createElement('div');
+                authorAvatar.className = "relative w-11 h-11 rounded-full border border-[#8b7355]/50 overflow-hidden shrink-0 bg-[#e8d9b8] flex items-center justify-center shadow-inner";
+                
+                const avatarFallback = document.createElement('div');
+                avatarFallback.className = "font-bold text-xs text-[#8b3a2a]";
+                avatarFallback.innerText = getInitials(record.author);
+                authorAvatar.appendChild(avatarFallback);
 
-  DATA.forEach((d, i) => {
-    const angle = (2 * Math.PI * i / n) - Math.PI / 2;
-    const ax = Math.cos(angle) * authorR;
-    const ay = Math.sin(angle) * authorR;
-    const authorColor = AUTHOR_FILLS[i % AUTHOR_FILLS.length];
-    
-    authorRing.push({ 
-      x: ax, y: ay, angle, data: d, color: authorColor, 
-      idx: i, bookStart: -1, bookCount: d.books.length 
-    });
-  });
+                if (record.author_image && record.author_image !== 'None' && record.author_image !== '') {
+                    const img = document.createElement('img');
+                    img.className = "absolute inset-0 w-full h-full object-cover filter sepia-[0.25]";
+                    img.src = record.author_image;
+                    img.alt = record.author;
+                    img.onerror = () => img.style.display = 'none';
+                    authorAvatar.appendChild(img);
+                }
+                header.appendChild(authorAvatar);
 
-  let currentBookGlobalIdx = 0;
-  authorRing.forEach((an) => {
-    an.bookStart = currentBookGlobalIdx;
-    const nb = an.bookCount;
-    const authorArcStep = (2 * Math.PI) / n;
-    const maxFan = authorArcStep * 0.85;
-    const spread = nb === 1 ? 0 : maxFan;
+                const info = document.createElement('div');
+                info.className = "flex flex-col min-w-0";
+                info.innerHTML = `
+                    <div class="serif-font text-sm font-bold text-[#1a1208] truncate" title="${record.author}">${record.author}</div>
+                    <div class="text-[9px] uppercase font-bold tracking-wider text-[#8b7355]">
+                        ${record.books.length} ${record.books.length === 1 ? 'Nomination' : 'Nominations'}
+                    </div>
+                `;
+                header.appendChild(info);
+                card.appendChild(header);
 
-    an.data.books.forEach((book, j) => {
-      const off = nb === 1 ? 0 : (j / (nb - 1) - 0.5) * spread;
-      const bAngle = an.angle + off;
-      const bookR = bookBaseR + (j * 24);
+                // BOOKS SCROLLER COMPONENT
+                const booksScroller = document.createElement('div');
+                booksScroller.className = "flex flex-row gap-3 items-center w-full overflow-x-auto books-scrollbar pt-3 pb-1";
 
-      bookNodes.push({
-        x: Math.cos(bAngle) * bookR,
-        y: Math.sin(bAngle) * bookR,
-        angle: bAngle,
-        book,
-        author: an.data.author,
-        color: BOOK_FILLS[an.idx % BOOK_FILLS.length],
-        authorIdx: an.idx,
-        globalIdx: currentBookGlobalIdx
-      });
-      currentBookGlobalIdx++;
-    });
-  });
+                record.books.forEach(book => {
+                    const bookCard = document.createElement('div');
+                    bookCard.className = "group relative w-20 h-30 rounded bg-[#f5edd8] border border-[#8b7355]/40 overflow-hidden shadow-xs shrink-0 cursor-help transition-all duration-200 hover:border-[#8b3a2a]";
 
-  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-  [...authorRing, ...bookNodes].forEach(node => {
-    const hw = (node.data ? TILE_W : BOOK_W) / 2 + 10;
-    const hh = (node.data ? TILE_H : BOOK_H) / 2 + 10;
-    minX = Math.min(minX, node.x - hw);
-    maxX = Math.max(maxX, node.x + hw);
-    minY = Math.min(minY, node.y - hh);
-    maxY = Math.max(maxY, node.y + hh);
-  });
+                    // Fallback visual layer
+                    const bookFallback = document.createElement('div');
+                    bookFallback.className = "absolute inset-0 p-1.5 flex flex-col justify-between border-l-2 border-[#8b3a2a] bg-[#e8d9b8]/20 text-[#1a1208]";
+                    bookFallback.innerHTML = `
+                        <div class="text-[8px] font-bold tracking-tight leading-tight line-clamp-3 text-center mt-1">${book.title}</div>
+                        <div class="text-[7px] font-mono text-[#8b3a2a] text-center font-bold">★ ${book.votes}</div>
+                    `;
+                    bookCard.appendChild(bookFallback);
 
-  const pad = 50;
-  W = (maxX - minX) + pad * 2;
-  H = (maxY - minY) + pad * 2;
+                    // Cover Art image layer
+                    if (book.cover_url && book.cover_url !== 'None' && book.cover_url !== '') {
+                        const bImg = document.createElement('img');
+                        bImg.className = "absolute inset-0 w-full h-full object-cover z-10 group-hover:scale-105 transition duration-300";
+                        bImg.src = book.cover_url;
+                        bImg.alt = book.title;
+                        bImg.onerror = () => bImg.style.display = 'none';
+                        bookCard.appendChild(bImg);
+                    }
 
-  const ox = -minX + pad;
-  const oy = -minY + pad;
-  authorRing.forEach(node => { node.cx = node.x + ox; node.cy = node.y + oy; });
-  bookNodes.forEach(node => { node.cx = node.x + ox; node.cy = node.y + oy; });
+                    // Score indicator tag
+                    const scoreBadge = document.createElement('div');
+                    scoreBadge.className = "absolute top-1 left-1 bg-[#1a1208]/90 border border-[#8b7355]/50 text-[#c9963a] text-[7px] font-bold px-1 rounded z-20 font-mono scale-90";
+                    scoreBadge.innerText = `★ ${book.votes}`;
+                    bookCard.appendChild(scoreBadge);
 
-  return { W, H };
-}
+                    // Detailed cover hover popup layer
+                    const bookOverlay = document.createElement('div');
+                    bookOverlay.className = "absolute inset-0 bg-[#1a1208]/95 z-30 p-1.5 flex flex-col justify-center items-center text-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 border border-[#8b3a2a]/40";
+                    bookOverlay.innerHTML = `
+                        <div class="serif-font text-[9px] font-bold text-[#f5edd8] leading-tight line-clamp-3 mb-1">${book.title}</div>
+                        <div class="text-[7px] font-bold text-[#c9963a]">${book.votes} ${book.votes === 1 ? 'Vote' : 'Votes'}</div>
+                    `;
+                    bookCard.appendChild(bookOverlay);
 
-function wrapText(ctx, text, maxW) {
-  const words = text.split(' ');
-  const lines = [];
-  let line = '';
-  for (const w of words) {
-    const test = line ? line + ' ' + w : w;
-    if (ctx.measureText(test).width > maxW && line) {
-      lines.push(line);
-      line = w;
-    } else {
-      line = test;
-    }
-  }
-  if (line) lines.push(line);
-  return lines;
-}
+                    booksScroller.appendChild(bookCard);
+                });
 
-function drawTile(ctx, cx, cy, w, h, fill, text, subtext, highlighted) {
-  const r = 3;
-  ctx.save();
+                card.appendChild(booksScroller);
+                shelf.appendChild(card);
+            });
+        }
 
-  ctx.shadowColor = 'rgba(0,0,0,0.28)';
-  ctx.shadowBlur  = highlighted ? 14 : 6;
-  ctx.shadowOffsetX = 1; ctx.shadowOffsetY = 2;
+        // Live input sync binding event
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase().trim();
+            if (!val) {
+                renderShelfLayout(libraryPayload);
+                return;
+            }
 
-  ctx.fillStyle = fill;
-  roundRect(ctx, cx - w/2, cy - h/2, w, h, r);
-  ctx.fill();
+            const searchResult = libraryPayload.filter(item => {
+                const authorMatch = item.author.toLowerCase().includes(val);
+                const titleMatch = item.books.some(b => b.title.toLowerCase().includes(val));
+                return authorMatch || titleMatch;
+            });
 
-  ctx.shadowColor = 'transparent';
+            renderShelfLayout(searchResult);
+        });
 
-  ctx.strokeStyle = highlighted ? '#f0c060' : 'rgba(201,150,58,0.6)';
-  ctx.lineWidth   = highlighted ? 1.8 : 0.8;
-  roundRect(ctx, cx - w/2, cy - h/2, w, h, r);
-  ctx.stroke();
-
-  ctx.fillStyle = '#f5edd8';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-
-  const innerW = w - 10;
-  ctx.font = 'bold 10px "Courier Prime", monospace';
-  const lines = wrapText(ctx, text, innerW);
-  const totalH = lines.length * 13;
-
-  if (subtext) {
-    const startY = cy - totalH/2 - 1;
-    lines.forEach((l, i) => { ctx.fillText(l, cx, startY + i * 13); });
-    ctx.font = '8px "Courier Prime", monospace';
-    ctx.fillStyle = 'rgba(245,237,216,0.65)';
-    ctx.fillText(subtext, cx, cy + totalH/2 + 7);
-  } else {
-    const startY = cy - (totalH - 13) / 2;
-    lines.forEach((l, i) => { ctx.fillText(l, cx, startY + i * 13); });
-  }
-
-  ctx.restore();
-}
-
-function roundRect(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
-}
-
-function drawLine(ctx, x1, y1, x2, y2, highlighted) {
-  ctx.save();
-  ctx.beginPath();
-  ctx.moveTo(x1, y1);
-  ctx.lineTo(x2, y2);
-  ctx.strokeStyle = highlighted ? 'rgba(201,150,58,0.95)' : 'rgba(139,115,85,0.25)';
-  ctx.lineWidth   = highlighted ? 2.0 : 0.7;
-  ctx.stroke();
-  ctx.restore();
-}
-
-function draw(hovered = null) {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  hitAreas = [];
-
-  ctx.fillStyle = '#f5edd8';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  let sumX = 0, sumY = 0;
-  authorRing.forEach(n => { sumX += n.cx; sumY += n.cy; });
-  const cX = sumX / authorRing.length;
-  const cY = sumY / authorRing.length;
-
-  ctx.save();
-  ctx.strokeStyle = 'rgba(139,115,85,0.08)';
-  ctx.lineWidth = 0.5;
-  ctx.setLineDash([3,5]);
-  [550, 1000].forEach(r => {
-    ctx.beginPath();
-    ctx.arc(cX, cY, r, 0, Math.PI * 2);
-    ctx.stroke();
-  });
-  ctx.restore();
-
-  ctx.save();
-  ctx.font = 'italic 14px "Playfair Display", serif';
-  ctx.fillStyle = 'rgba(139,90,43,0.22)';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('The Raspy Raven', cX, cY - 10);
-  ctx.font = '9px "Courier Prime", monospace';
-  ctx.fillStyle = 'rgba(139,90,43,0.15)';
-  ctx.fillText('Book Poll Framework', cX, cY + 8);
-  ctx.restore();
-
-  // Arrays to hold the active elements that need to be drawn LAST (on top)
-  const backgroundLines = [];
-  const foregroundLines = [];
-  const backgroundBooks = [];
-  const foregroundBooks = [];
-  const backgroundAuthors = [];
-  const foregroundAuthors = [];
-
-  // 1. Process Connection Lines
-  bookNodes.forEach((bn) => {
-    const an = authorRing[bn.authorIdx];
-    const isLit = hovered !== null && (
-      (hovered.type === 'author' && hovered.idx === bn.authorIdx) ||
-      (hovered.type === 'book' && hovered.idx === bn.globalIdx)
-    );
-    
-    if (isLit) {
-      foregroundLines.push({ an, bn });
-    } else {
-      backgroundLines.push({ an, bn });
-    }
-  });
-
-  // 2. Process Book Nodes
-  bookNodes.forEach((bn) => {
-    const isLit = hovered !== null && (
-      (hovered.type === 'author' && hovered.idx === bn.authorIdx) ||
-      (hovered.type === 'book' && hovered.idx === bn.globalIdx)
-    );
-    
-    hitAreas.push({ type: 'book', idx: bn.globalIdx, x: bn.cx, y: bn.cy, w: BOOK_W, h: BOOK_H, data: bn });
-    
-    if (isLit) {
-      foregroundBooks.push(bn);
-    } else {
-      backgroundBooks.push(bn);
-    }
-  });
-
-  // 3. Process Author Nodes
-  authorRing.forEach((an) => {
-    const isLit = hovered !== null && (
-      (hovered.type === 'author' && hovered.idx === an.idx) ||
-      (nodeIsBookAndBelongsToAuthor(hovered, an.idx))
-    );
-    
-    hitAreas.push({ type: 'author', idx: an.idx, x: an.cx, y: an.cy, w: TILE_W, h: TILE_H, data: an });
-    
-    if (isLit) {
-      foregroundAuthors.push(an);
-    } else {
-      backgroundAuthors.push(an);
-    }
-  });
-
-  // ─── EXECUTE DRAWING IN LAYER ORDERS ───
-  
-  // A. Background layers (non-hovered items)
-  backgroundLines.forEach(line => drawLine(ctx, line.an.cx, line.an.cy, line.bn.cx, line.bn.cy, false));
-  backgroundBooks.forEach(bn => drawTile(ctx, bn.cx, bn.cy, BOOK_W, BOOK_H, bn.color, bn.book, null, false));
-  backgroundAuthors.forEach(an => drawTile(ctx, an.cx, an.cy, TILE_W, TILE_H, an.color, an.data.author, `${an.bookCount} book${an.bookCount > 1 ? 's' : ''}`, false));
-
-  // B. Foreground layers (hovered items — drawn last to be brought to front)
-  foregroundLines.forEach(line => drawLine(ctx, line.an.cx, line.an.cy, line.bn.cx, line.bn.cy, true));
-  foregroundBooks.forEach(bn => drawTile(ctx, bn.cx, bn.cy, BOOK_W, BOOK_H, '#1a4a3a', bn.book, null, true));
-  foregroundAuthors.forEach(an => drawTile(ctx, an.cx, an.cy, TILE_W, TILE_H, '#7a2a0e', an.data.author, `${an.bookCount} book${an.bookCount > 1 ? 's' : ''}`, true));
-}
-
-function nodeIsBookAndBelongsToAuthor(hoveredNode, authorIdx) {
-  return hoveredNode !== null && hoveredNode.type === 'book' && hoveredNode.data.authorIdx === authorIdx;
-}
-
-function resize() {
-  const { W: cw, H: ch } = computeLayout();
-  const maxW = window.innerWidth - 32;
-  scale = Math.min(1, maxW / cw);
-  canvas.width  = Math.round(cw * scale);
-  canvas.height = Math.round(ch * scale);
-  canvas.style.width  = canvas.width  + 'px';
-  canvas.style.height = canvas.height + 'px';
-  ctx.setTransform(scale, 0, 0, scale, 0, 0);
-  draw(null);
-}
-
-function hitTest(ex, ey) {
-  const rect = canvas.getBoundingClientRect();
-  const lx = (ex - rect.left) / scale;
-  const ly = (ey - rect.top)  / scale;
-  for (let i = hitAreas.length - 1; i >= 0; i--) {
-    const a = hitAreas[i];
-    if (Math.abs(lx - a.x) < a.w/2 && Math.abs(ly - a.y) < a.h/2) return { ...a };
-  }
-  return null;
-}
-
-canvas.addEventListener('mousemove', e => {
-  const hit = hitTest(e.clientX, e.clientY);
-  canvas.style.cursor = hit ? 'pointer' : 'default';
-
-  if (hit) {
-    draw(hit);
-    let html;
-    if (hit.type === 'author') {
-      const d = hit.data.data;
-      html = `<strong>${d.author}</strong><br>${d.books.map(b => '· ' + b).join('<br>')}`;
-    } else {
-      html = `<em>${hit.data.book}</em><br><span style="opacity:.7">${hit.data.author}</span>`;
-    }
-    tooltip.innerHTML = html;
-    tooltip.classList.add('visible');
-    tooltip.style.left = (e.clientX + 14) + 'px';
-    tooltip.style.top  = (e.clientY - 10) + 'px';
-  } else {
-    draw(null);
-    tooltip.classList.remove('visible');
-  }
-});
-
-canvas.addEventListener('mouseleave', () => {
-  draw(null);
-  tooltip.classList.remove('visible');
-  canvas.style.cursor = 'default';
-});
-
-window.addEventListener('resize', resize);
-resize();
-</script>
+        // Instantiate components
+        initMetrics(libraryPayload);
+        renderShelfLayout(libraryPayload);
+    </script>
 </body>
 </html>
