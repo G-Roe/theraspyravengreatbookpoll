@@ -26,6 +26,8 @@
             background-color: var(--parchment);
             font-family: 'Courier Prime', monospace;
             color: var(--ink);
+            /* Scaling layout elements upwards by 20% globally */
+            font-size: 1.2rem; 
         }
 
         /* Subtle paper texture overlay matching index.html */
@@ -42,12 +44,12 @@
             font-family: 'Playfair Display', serif;
         }
 
-        /* Rule line decorations matching index.html */
+        /* Rule line decorations matching index.html scaled by 20% */
         .rule {
-            width: 120px;
-            height: 1px;
+            width: 144px;
+            height: 1.2px;
             background: var(--gold);
-            margin: 1.2rem auto;
+            margin: 1.5rem auto;
             position: relative;
         }
         .rule::before, .rule::after {
@@ -55,64 +57,63 @@
             position: absolute;
             top: 50%;
             transform: translateY(-50%);
-            font-size: 0.5rem;
+            font-size: 0.6rem;
             color: var(--gold);
         }
-        .rule::before { left: -14px; }
-        .rule::after  { right: -14px; }
+        .rule::before { left: -18px; }
+        .rule::after  { right: -18px; }
 
         /* Custom smooth horizontal scrollbar for the book rows */
         .books-scrollbar::-webkit-scrollbar {
-            height: 5px;
+            height: 6px;
         }
         .books-scrollbar::-webkit-scrollbar-track {
             background: rgba(139, 115, 85, 0.1);
-            border-radius: 4px;
+            border-radius: 5px;
         }
         .books-scrollbar::-webkit-scrollbar-thumb {
             background: var(--line);
             opacity: 0.4;
-            border-radius: 4px;
+            border-radius: 5px;
         }
         .books-scrollbar::-webkit-scrollbar-thumb:hover {
             background: var(--rust);
         }
     </style>
 </head>
-<body class="min-h-screen relative selection:bg-[#8b3a2a] selection:text-[#f5edd8] pb-12">
+<body class="min-h-screen relative selection:bg-[#8b3a2a] selection:text-[#f5edd8] pb-16">
 
     <!-- Header Block -->
-    <header class="text-center pt-12 pb-6 px-4 relative z-20">
-        <div class="text-xs font-bold tracking-[0.35em] text-[#8b3a2a] uppercase mb-2">☽ The Raspy Raven ☾</div>
-        <h1 class="serif-font text-3xl md:text-5xl font-bold tracking-tight text-[#1a1208]">
+    <header class="text-center pt-14 pb-8 px-6 relative z-20">
+        <div class="text-[13px] font-bold tracking-[0.35em] text-[#8b3a2a] uppercase mb-3">☽ The Raspy Raven ☾</div>
+        <h1 class="serif-font text-4xl md:text-6xl font-bold tracking-tight text-[#1a1208]">
             The Great <span class="italic text-[#8b3a2a]">Book Gallery</span>
         </h1>
         <div class="rule"></div>
         
-        <!-- Live Counters Panel styled down into parchment blocks -->
-        <div class="max-w-xl mx-auto mt-4 grid grid-cols-3 gap-2 text-[11px] uppercase tracking-wider text-[#8b7355] font-bold">
-            <div class="bg-[#e8d9b8]/40 border border-[#8b7355]/30 rounded px-2 py-3 shadow-xs">
-                <span id="stat-authors" class="block text-base font-bold text-[#8b3a2a] mb-0.5">0</span> Authors
+        <!-- Live Counters Panel scaled up by 20% -->
+        <div class="max-w-2xl mx-auto mt-6 grid grid-cols-3 gap-3 text-[13px] uppercase tracking-wider text-[#8b7355] font-bold">
+            <div class="bg-[#e8d9b8]/40 border border-[#8b7355]/30 rounded px-3 py-4 shadow-xs">
+                <span id="stat-authors" class="block text-xl font-bold text-[#8b3a2a] mb-1">0</span> Authors
             </div>
-            <div class="bg-[#e8d9b8]/40 border border-[#8b7355]/30 rounded px-2 py-3 shadow-xs">
-                <span id="stat-books" class="block text-base font-bold text-[#1a1208] mb-0.5">0</span> Nominations
+            <div class="bg-[#e8d9b8]/40 border border-[#8b7355]/30 rounded px-3 py-4 shadow-xs">
+                <span id="stat-books" class="block text-xl font-bold text-[#1a1208] mb-1">0</span> Nominations
             </div>
-            <div class="bg-[#e8d9b8]/40 border border-[#8b7355]/30 rounded px-2 py-3 shadow-xs">
-                <span id="stat-votes" class="block text-base font-bold text-[#c9963a] mb-0.5">0</span> Total Votes
+            <div class="bg-[#e8d9b8]/40 border border-[#8b7355]/30 rounded px-3 py-4 shadow-xs">
+                <span id="stat-votes" class="block text-xl font-bold text-[#c9963a] mb-1">0</span> Total Votes
             </div>
         </div>
     </header>
 
-    <!-- Main Content Shelf Grid (Search and Filter Section Removed) -->
-    <main class="max-w-7xl mx-auto px-4 mt-8 relative z-20">
-        <!-- Shelf Grid Rows Container with smart resizing responsive wrap layout -->
-        <div id="gallery-shelf" class="flex flex-wrap gap-5 justify-start items-start">
+    <!-- Shelf Grid Rows Container with smart resizing layout matching the previous specifications -->
+    <main class="max-w-[90rem] mx-auto px-6 mt-6 relative z-20">
+        <div id="gallery-shelf" class="flex flex-wrap gap-6 justify-start items-start">
             <!-- JavaScript appends blocks dynamically here -->
         </div>
     </main>
 
     <!-- Footer Description -->
-    <footer class="text-center mt-16 text-[10px] text-[#8b7355] uppercase tracking-[0.2em] relative z-20">
+    <footer class="text-center mt-20 text-[12px] text-[#8b7355] uppercase tracking-[0.2em] relative z-20">
         <p>The Raspy Raven Book Poll Archive · Built with Vintage Textures</p>
     </footer>
 
@@ -1544,33 +1545,33 @@
             return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
         }
 
-        // Draw structural shelf component layouts with strict specified viewport classes
+        // Draw structural shelf layout with +20% enlarged boxes and text votes beneath covers
         function renderShelfLayout(items) {
             const shelf = document.getElementById('gallery-shelf');
             shelf.innerHTML = '';
 
             if (items.length === 0) {
                 shelf.innerHTML = `
-                    <div class="w-full text-center py-16 font-mono text-xs text-[#8b7355] border border-dashed border-[#8b7355]/40 rounded bg-[#e8d9b8]/10">
+                    <div class="w-full text-center py-20 font-mono text-sm text-[#8b7355] border border-dashed border-[#8b7355]/40 rounded bg-[#e8d9b8]/10">
                         No archive records found.
                     </div>`;
                 return;
             }
 
             items.forEach(record => {
-                // Main split card container using the specified responsive widths
+                // Multi-column responsive containers scaled up elegantly 
                 const card = document.createElement('div');
-                card.className = "w-full md:w-[calc(50%-10px)] xl:w-[calc(33.33%-14px)] flex flex-col p-4 rounded bg-[#e8d9b8]/20 border border-[#8b7355]/30 shadow-xs transition duration-150 hover:bg-[#e8d9b8]/30 hover:border-[#8b7355]/50 shrink-0";
+                card.className = "w-full md:w-[calc(50%-12px)] xl:w-[calc(33.33%-16px)] flex flex-col p-5 rounded bg-[#e8d9b8]/20 border border-[#8b7355]/30 shadow-sm transition duration-150 hover:bg-[#e8d9b8]/30 hover:border-[#8b7355]/50 shrink-0 mb-2";
 
-                // AUTHOR HEADER MODULE
+                // AUTHOR HEADER MODULE (+20% sized)
                 const header = document.createElement('div');
-                header.className = "flex flex-row gap-3 items-center border-b border-[#8b7355]/20 pb-3 w-full";
+                header.className = "flex flex-row gap-4 items-center border-b border-[#8b7355]/20 pb-4 w-full";
 
                 const authorAvatar = document.createElement('div');
-                authorAvatar.className = "relative w-11 h-11 rounded-full border border-[#8b7355]/50 overflow-hidden shrink-0 bg-[#e8d9b8] flex items-center justify-center shadow-inner";
+                authorAvatar.className = "relative w-14 h-14 rounded-full border border-[#8b7355]/50 overflow-hidden shrink-0 bg-[#e8d9b8] flex items-center justify-center shadow-inner";
                 
                 const avatarFallback = document.createElement('div');
-                avatarFallback.className = "font-bold text-xs text-[#8b3a2a]";
+                avatarFallback.className = "font-bold text-sm text-[#8b3a2a]";
                 avatarFallback.innerText = getInitials(record.author);
                 authorAvatar.appendChild(avatarFallback);
 
@@ -1587,32 +1588,36 @@
                 const info = document.createElement('div');
                 info.className = "flex flex-col min-w-0";
                 info.innerHTML = `
-                    <div class="serif-font text-sm font-bold text-[#1a1208] truncate" title="${record.author}">${record.author}</div>
-                    <div class="text-[9px] uppercase font-bold tracking-wider text-[#8b7355]">
+                    <div class="serif-font text-base font-bold text-[#1a1208] truncate" title="${record.author}">${record.author}</div>
+                    <div class="text-[11px] uppercase font-bold tracking-wider text-[#8b7355] mt-0.5">
                         ${record.books.length} ${record.books.length === 1 ? 'Nomination' : 'Nominations'}
                     </div>
                 `;
                 header.appendChild(info);
                 card.appendChild(header);
 
-                // BOOKS SCROLLER COMPONENT
+                // BOOKS HORIZONTAL SCROLLER COMPONENT (+20% size updates)
                 const booksScroller = document.createElement('div');
-                booksScroller.className = "flex flex-row gap-3 items-center w-full overflow-x-auto books-scrollbar pt-3 pb-1";
+                booksScroller.className = "flex flex-row gap-4 items-start w-full overflow-x-auto books-scrollbar pt-4 pb-2";
 
                 record.books.forEach(book => {
-                    const bookCard = document.createElement('div');
-                    bookCard.className = "group relative w-20 h-30 rounded bg-[#f5edd8] border border-[#8b7355]/40 overflow-hidden shadow-xs shrink-0 cursor-help transition-all duration-200 hover:border-[#8b3a2a]";
+                    // Vertical wrapper block to comfortably hold the cover and text below it
+                    const bookItemWrapper = document.createElement('div');
+                    bookItemWrapper.className = "flex flex-col items-center text-center shrink-0 w-24";
 
-                    // Fallback visual layer
+                    // Book Card Box (+20% size: 20px w / 30px h original scaled to 24px w / 36px h)
+                    const bookCard = document.createElement('div');
+                    bookCard.className = "group relative w-24 h-36 rounded bg-[#f5edd8] border border-[#8b7355]/40 overflow-hidden shadow-xs cursor-help transition-all duration-200 hover:border-[#8b3a2a]";
+
+                    // Card visual cover layout fallback
                     const bookFallback = document.createElement('div');
-                    bookFallback.className = "absolute inset-0 p-1.5 flex flex-col justify-between border-l-2 border-[#8b3a2a] bg-[#e8d9b8]/20 text-[#1a1208]";
+                    bookFallback.className = "absolute inset-0 p-2 flex flex-col justify-between border-l-2 border-[#8b3a2a] bg-[#e8d9b8]/20 text-[#1a1208]";
                     bookFallback.innerHTML = `
-                        <div class="text-[8px] font-bold tracking-tight leading-tight line-clamp-3 text-center mt-1">${book.title}</div>
-                        <div class="text-[7px] font-mono text-[#8b3a2a] text-center font-bold">★ ${book.votes}</div>
+                        <div class="text-[10px] font-bold tracking-tight leading-tight line-clamp-3 text-center mt-1">${book.title}</div>
                     `;
                     bookCard.appendChild(bookFallback);
 
-                    // Cover Art image layer
+                    // Image layer
                     if (book.cover_url && book.cover_url !== 'None' && book.cover_url !== '') {
                         const bImg = document.createElement('img');
                         bImg.className = "absolute inset-0 w-full h-full object-cover z-10 group-hover:scale-105 transition duration-300";
@@ -1622,22 +1627,22 @@
                         bookCard.appendChild(bImg);
                     }
 
-                    // Score indicator tag
-                    const scoreBadge = document.createElement('div');
-                    scoreBadge.className = "absolute top-1 left-1 bg-[#1a1208]/90 border border-[#8b7355]/50 text-[#c9963a] text-[7px] font-bold px-1 rounded z-20 font-mono scale-90";
-                    scoreBadge.innerText = `★ ${book.votes}`;
-                    bookCard.appendChild(scoreBadge);
-
-                    // Detailed cover hover popup layer
+                    // Hover Details Overlay popup box
                     const bookOverlay = document.createElement('div');
-                    bookOverlay.className = "absolute inset-0 bg-[#1a1208]/95 z-30 p-1.5 flex flex-col justify-center items-center text-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 border border-[#8b3a2a]/40";
+                    bookOverlay.className = "absolute inset-0 bg-[#1a1208]/95 z-30 p-2 flex flex-col justify-center items-center text-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 border border-[#8b3a2a]/40";
                     bookOverlay.innerHTML = `
-                        <div class="serif-font text-[9px] font-bold text-[#f5edd8] leading-tight line-clamp-3 mb-1">${book.title}</div>
-                        <div class="text-[7px] font-bold text-[#c9963a]">${book.votes} ${book.votes === 1 ? 'Vote' : 'Votes'}</div>
+                        <div class="serif-font text-[10px] font-bold text-[#f5edd8] leading-tight line-clamp-4">${book.title}</div>
                     `;
                     bookCard.appendChild(bookOverlay);
+                    bookItemWrapper.appendChild(bookCard);
 
-                    booksScroller.appendChild(bookCard);
+                    // CLEAR READABLE TEXT VOTES BELOW BOOK COVER
+                    const votesLabel = document.createElement('div');
+                    votesLabel.className = "mt-2 font-mono font-bold text-[11px] text-[#8b3a2a] bg-[#e8d9b8]/60 px-1.5 py-0.5 rounded border border-[#8b7355]/20 shadow-2xs whitespace-nowrap";
+                    votesLabel.innerText = `${book.votes} ${book.votes === 1 ? 'vote' : 'votes'}`;
+                    bookItemWrapper.appendChild(votesLabel);
+
+                    booksScroller.appendChild(bookItemWrapper);
                 });
 
                 card.appendChild(booksScroller);
@@ -1645,7 +1650,7 @@
             });
         }
 
-        // Instantiate components
+        // Initialize layouts
         initMetrics(libraryPayload);
         renderShelfLayout(libraryPayload);
     </script>
