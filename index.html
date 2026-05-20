@@ -103,19 +103,8 @@
         </div>
     </header>
 
-    <!-- Controls Toolbar -->
-    <main class="max-w-7xl mx-auto px-4 mt-4 relative z-20">
-        <div class="mb-8 bg-[#e8d9b8]/30 border border-[#8b7355]/40 rounded-lg p-4 flex flex-col sm:flex-row gap-4 justify-between items-center shadow-xs">
-            <div class="relative w-full sm:w-72">
-                <input type="text" id="search-input" placeholder="Search author or title..." 
-                       class="w-full bg-[#f5edd8] text-[#1a1208] font-mono text-xs pl-3 pr-8 py-2 rounded border border-[#8b7355]/60 focus:outline-none focus:border-[#8b3a2a] transition placeholder-[#8b7355]/60 shadow-inner">
-                <span class="absolute right-2.5 top-2.5 text-[#8b7355] text-xs">🔍</span>
-            </div>
-            <div class="text-[11px] text-[#8b7355] text-center sm:text-right font-mono max-w-md leading-relaxed">
-                <span class="text-[#8b3a2a] font-bold">◆ Interactive Archive:</span> Hover over any book item to reveal detail overlays dynamically.
-            </div>
-        </div>
-
+    <!-- Main Content Shelf Grid (Search and Filter Section Removed) -->
+    <main class="max-w-7xl mx-auto px-4 mt-8 relative z-20">
         <!-- Shelf Grid Rows Container with smart resizing responsive wrap layout -->
         <div id="gallery-shelf" class="flex flex-wrap gap-5 justify-start items-start">
             <!-- JavaScript appends blocks dynamically here -->
@@ -1563,7 +1552,7 @@
             if (items.length === 0) {
                 shelf.innerHTML = `
                     <div class="w-full text-center py-16 font-mono text-xs text-[#8b7355] border border-dashed border-[#8b7355]/40 rounded bg-[#e8d9b8]/10">
-                        No archive records correspond to your filter query.
+                        No archive records found.
                     </div>`;
                 return;
             }
@@ -1655,23 +1644,6 @@
                 shelf.appendChild(card);
             });
         }
-
-        // Live input sync binding event
-        document.getElementById('search-input').addEventListener('input', (e) => {
-            const val = e.target.value.toLowerCase().trim();
-            if (!val) {
-                renderShelfLayout(libraryPayload);
-                return;
-            }
-
-            const searchResult = libraryPayload.filter(item => {
-                const authorMatch = item.author.toLowerCase().includes(val);
-                const titleMatch = item.books.some(b => b.title.toLowerCase().includes(val));
-                return authorMatch || titleMatch;
-            });
-
-            renderShelfLayout(searchResult);
-        });
 
         // Instantiate components
         initMetrics(libraryPayload);
